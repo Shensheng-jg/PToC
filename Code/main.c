@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "syntax_tree.h"
+#include "semantic.h"
 
 extern FILE *yyin;
 extern int yyparse(void);
@@ -21,7 +22,10 @@ int main(int argc, char **argv){
     fclose(yyin);
 
     if(lexical_error_count == 0 && syntax_error_count == 0 && syntax_root != NULL){
-        print_tree(syntax_root, 0);
+        semantic_analyze(syntax_root);
+        if(semantic_error_count == 0){
+            print_tree(syntax_root, 0);
+        }
     }
     free_tree(syntax_root);
     return 0;
