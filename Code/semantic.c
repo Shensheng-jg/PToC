@@ -303,6 +303,7 @@ static void analyze_StmtList(Node *node, Type ret_type);
 static void analyze_Stmt(Node *node, Type ret_type);
 static ExpInfo analyze_Exp(Node *node);
 static FieldList analyze_Args(Node *node, int *argc);
+static FieldList build_VarList_fields(Node *node, int *param_count);
 
 /* =========================
  * 表达式辅助
@@ -379,10 +380,9 @@ static void analyze_ExtDef(Node *node) {
     if (a && b && c && is_nonterm(a, "Specifier") && is_nonterm(b, "ExtDecList")) {
         Type spec_type = analyze_Specifier(a);
 
-        /* 处理全局变量定义 */
         Node *p = b;
         while (p) {
-            Node *v = child(p, 0);  /* VarDec */
+            Node *v = child(p, 0);
             char *name = NULL;
             Type var_type = build_VarDec_type(v, spec_type, &name);
 
@@ -396,7 +396,7 @@ static void analyze_ExtDef(Node *node) {
                 }
             }
 
-            if (child(p, 2)) p = child(p, 2);  /* VarDec COMMA ExtDecList */
+            if (child(p, 2)) p = child(p, 2);
             else break;
         }
         return;
@@ -412,43 +412,32 @@ static void analyze_ExtDef(Node *node) {
     if (a && b && c && is_nonterm(a, "Specifier") && is_nonterm(b, "FunDec") && is_nonterm(c, "CompSt")) {
         Type ret_type = analyze_Specifier(a);
 
-        Node *idnode = child(b, 0); /* ID */
+        Node *idnode = child(b, 0);
         char *fname = idnode->text;
 
         int param_count = 0;
         FieldList params = NULL;
+
         if (child(b, 2) && is_nonterm(child(b, 2), "VarList")) {
-            enter_scope();  /* 先临时建函数形参作用域 */
-            params = analyze_VarList(child(b, 2), &param_count);
-
-            Type ftype = new_type_function(ret_type, params, param_count);
-
-            Symbol *oldf = lookup_current_scope(fname, SYM_FUNC);
-            leave_scope();
-
-            if (oldf) {
-                semantic_error(4, idnode->line, "Redefined function \"%s\".", fname);
-                /* 仍继续分析函数体 */
-            } else {
-                insert_symbol(new_symbol(fname, SYM_FUNC, ftype));
-            }
-        } else {
-            Type ftype = new_type_function(ret_type, NULL, 0);
-            Symbol *oldf = lookup_current_scope(fname, SYM_FUNC);
-            if (oldf) {
-                semantic_error(4, idnode->line, "Redefined function \"%s\".", fname);
-            } else {
-                insert_symbol(new_symbol(fname, SYM_FUNC, ftype));
-            }
+            params = build_VarList_fields(child(b, 2), &param_count);
         }
 
-        /* 真正进入函数体作用域，重新插入形参 */
+        Type ftype = new_type_function(ret_type, params, param_count);
+
+        Symbol *oldf = lookup_current_scope(fname, SYM_FUNC);
+        if (oldf) {
+            semantic_error(4, idnode->line, "Redefined function \"%s\".", fname);
+        } else {
+            insert_symbol(new_symbol(fname, SYM_FUNC, ftype));
+        }
+
+        /* 真正进入函数体作用域，只分析一次形参 */
         enter_scope();
         if (child(b, 2) && is_nonterm(child(b, 2), "VarList")) {
             int dummy = 0;
             (void)analyze_VarList(child(b, 2), &dummy);
         }
-        analyze_CompSt(c, ret_type, 0); /* 函数体作用域已建立 */
+        analyze_CompSt(c, ret_type, 0);
         leave_scope();
         return;
     }
@@ -469,10 +458,9 @@ static Type analyze_Specifier(Node *node) {
 static Type analyze_StructSpecifier(Node *node) {
     Node *c0 = child(node, 0);
     Node *c1 = child(node, 1);
-    Node *c2 = child(node, 2);
 
     /* STRUCT Tag */
-    if (c0 && c1 && !c2) {
+    if (c0 && c1 && is_nonterm(c1, "Tag")) {
         Node *idnode = child(c1, 0);
         Symbol *s = lookup_kind(idnode->text, SYM_STRUCT);
         if (!s) {
@@ -482,12 +470,18 @@ static Type analyze_StructSpecifier(Node *node) {
         return s->type;
     }
 
-    /* STRUCT OptTag LC DefList RC */
+    /* STRUCT OptTag LC DefList RC
+       或 STRUCT LC DefList RC（OptTag 为空时） */
     char *sname = NULL;
-    if (c1) {
-        if (is_nonterm(c1, "OptTag") && child(c1, 0)) {
+    Node *deflist = NULL;
+
+    if (c1 && is_nonterm(c1, "OptTag")) {
+        if (child(c1, 0)) {
             sname = child(c1, 0)->text;
         }
+        deflist = child(node, 3);   /* STRUCT OptTag LC DefList RC */
+    } else {
+        deflist = child(node, 2);   /* STRUCT LC DefList RC */
     }
 
     if (!sname) {
@@ -499,12 +493,12 @@ static Type analyze_StructSpecifier(Node *node) {
     }
 
     FieldList fields = NULL;
-    analyze_DefList(child(node, 3), 1, &fields);
+    analyze_DefList(deflist, 1, &fields);
 
     Type stype = new_type_structure(sname, fields);
 
     /* 只有具名结构体才登记到符号表 */
-    if (child(c1, 0)) {
+    if (c1 && is_nonterm(c1, "OptTag") && child(c1, 0)) {
         if (!lookup_kind(sname, SYM_STRUCT) && !lookup_kind(sname, SYM_VAR)) {
             insert_symbol(new_symbol(sname, SYM_STRUCT, stype));
         }
@@ -554,9 +548,10 @@ static FieldList analyze_VarList(Node *node, int *param_count) {
     if (name) {
         if (current_scope_has_name(name)) {
             semantic_error(3, vardec->line, "Redefined variable \"%s\".", name);
-        } else if (lookup_kind(name, SYM_STRUCT)) {
-            semantic_error(3, vardec->line, "Redefined variable \"%s\".", name);
         } else {
+            if (lookup_kind(name, SYM_STRUCT)) {
+                semantic_error(3, vardec->line, "Redefined variable \"%s\".", name);
+            }
             insert_symbol(new_symbol(name, SYM_VAR, var_type));
         }
     }
@@ -935,7 +930,28 @@ static ExpInfo analyze_Exp(Node *node) {
     return make_exp(NULL, 0);
 }
 
+static FieldList build_VarList_fields(Node *node, int *param_count) {
+    if (!node) return NULL;
 
+    /* VarList -> ParamDec COMMA VarList | ParamDec */
+    Node *param = child(node, 0);
+    Node *rest = child(node, 2);
+
+    Node *spec = child(param, 0);
+    Node *vardec = child(param, 1);
+
+    Type spec_type = analyze_Specifier(spec);
+    char *name = NULL;
+    Type var_type = build_VarDec_type(vardec, spec_type, &name);
+
+    FieldList head = new_field(name ? name : "#param", var_type);
+    (*param_count)++;
+
+    if (rest) {
+        head->tail = build_VarList_fields(rest, param_count);
+    }
+    return head;
+}
 
 
 
