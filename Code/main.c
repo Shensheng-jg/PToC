@@ -23,9 +23,9 @@ int main(int argc, char **argv){
 
     if(lexical_error_count == 0 && syntax_error_count == 0 && syntax_root != NULL){
         semantic_analyze(syntax_root);
-        if(semantic_error_count == 0){
-            print_tree(syntax_root, 0);
-        }
+        // if(semantic_error_count == 0){
+        //     print_tree(syntax_root, 0);
+        // }
     }
     free_tree(syntax_root);
     return 0;
