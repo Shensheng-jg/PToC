@@ -1,0 +1,107 @@
+FUNCTION min :
+PARAM a
+PARAM b
+IF a <= b GOTO label1
+GOTO label2
+LABEL label1 :
+RETURN a
+LABEL label2 :
+RETURN b
+FUNCTION fibMonaccianSearch :
+DEC arr 64
+i := #0
+n := #16
+t1 := #0 - #1
+offset := t1
+fibMMm2 := #0
+fibMMm1 := #1
+t2 := fibMMm2 + fibMMm1
+fibM := t2
+LABEL label4 :
+IF i < #16 GOTO label5
+GOTO label6
+LABEL label5 :
+READ t3
+t5 := &arr
+t6 := i * #4
+t4 := t5 + t6
+*t4 := t3
+t7 := i + #1
+i := t7
+GOTO label4
+LABEL label6 :
+READ t8
+x := t8
+LABEL label7 :
+IF fibM < n GOTO label8
+GOTO label9
+LABEL label8 :
+fibMMm2 := fibMMm1
+fibMMm1 := fibM
+t9 := fibMMm2 + fibMMm1
+fibM := t9
+GOTO label7
+LABEL label9 :
+LABEL label10 :
+IF fibM > #1 GOTO label11
+GOTO label12
+LABEL label11 :
+t11 := offset + fibMMm2
+t12 := n - #1
+ARG t12
+ARG t11
+t10 := CALL min
+i := t10
+t15 := &arr
+t16 := i * #4
+t14 := t15 + t16
+t13 := *t14
+IF t13 < x GOTO label13
+GOTO label14
+LABEL label13 :
+fibM := fibMMm1
+fibMMm1 := fibMMm2
+t17 := fibM - fibMMm1
+fibMMm2 := t17
+offset := i
+GOTO label15
+LABEL label14 :
+t20 := &arr
+t21 := i * #4
+t19 := t20 + t21
+t18 := *t19
+IF t18 > x GOTO label16
+GOTO label17
+LABEL label16 :
+fibM := fibMMm2
+t22 := fibMMm1 - fibMMm2
+fibMMm1 := t22
+t23 := fibM - fibMMm1
+fibMMm2 := t23
+GOTO label18
+LABEL label17 :
+RETURN i
+LABEL label18 :
+LABEL label15 :
+GOTO label10
+LABEL label12 :
+IF fibMMm1 != #0 GOTO label21
+GOTO label20
+LABEL label21 :
+t26 := &arr
+t28 := offset + #1
+t27 := t28 * #4
+t25 := t26 + t27
+t24 := *t25
+IF t24 == x GOTO label19
+GOTO label20
+LABEL label19 :
+t29 := offset + #1
+RETURN t29
+LABEL label20 :
+t30 := #0 - #1
+RETURN t30
+FUNCTION main :
+t31 := CALL fibMonaccianSearch
+WRITE t31
+RETURN #0

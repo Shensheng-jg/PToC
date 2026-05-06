@@ -1,0 +1,137 @@
+FUNCTION Swap :
+PARAM a
+PARAM l
+PARAM h
+t3 := a
+t4 := l * #4
+t2 := t3 + t4
+t1 := *t2
+temp := t1
+t7 := a
+t8 := h * #4
+t6 := t7 + t8
+t5 := *t6
+t10 := a
+t11 := l * #4
+t9 := t10 + t11
+*t9 := t5
+t13 := a
+t14 := h * #4
+t12 := t13 + t14
+*t12 := temp
+RETURN #0
+FUNCTION Partition :
+PARAM b
+PARAM low
+PARAM high
+t17 := b
+t18 := low * #4
+t16 := t17 + t18
+t15 := *t16
+base := t15
+LABEL label1 :
+IF low < high GOTO label2
+GOTO label3
+LABEL label2 :
+LABEL label4 :
+IF low < high GOTO label7
+GOTO label6
+LABEL label7 :
+t21 := b
+t22 := high * #4
+t20 := t21 + t22
+t19 := *t20
+IF t19 >= base GOTO label5
+GOTO label6
+LABEL label5 :
+t23 := high - #1
+high := t23
+GOTO label4
+LABEL label6 :
+ARG high
+ARG low
+ARG b
+t24 := CALL Swap
+LABEL label8 :
+IF low < high GOTO label11
+GOTO label10
+LABEL label11 :
+t27 := b
+t28 := low * #4
+t26 := t27 + t28
+t25 := *t26
+IF t25 <= base GOTO label9
+GOTO label10
+LABEL label9 :
+t29 := low + #1
+low := t29
+GOTO label8
+LABEL label10 :
+ARG high
+ARG low
+ARG b
+t30 := CALL Swap
+GOTO label1
+LABEL label3 :
+RETURN low
+FUNCTION QuickSort :
+PARAM c
+PARAM low1
+PARAM high1
+IF low1 < high1 GOTO label12
+GOTO label13
+LABEL label12 :
+ARG high1
+ARG low1
+ARG c
+t31 := CALL Partition
+base1 := t31
+t32 := base1 - #1
+ARG t32
+ARG low1
+ARG c
+t33 := CALL QuickSort
+t34 := base1 + #1
+ARG high1
+ARG t34
+ARG c
+t35 := CALL QuickSort
+LABEL label13 :
+RETURN #0
+FUNCTION main :
+n := #8
+DEC arr 32
+i := #0
+LABEL label14 :
+IF i < n GOTO label15
+GOTO label16
+LABEL label15 :
+READ t36
+t38 := &arr
+t39 := i * #4
+t37 := t38 + t39
+*t37 := t36
+t40 := i + #1
+i := t40
+GOTO label14
+LABEL label16 :
+t41 := n - #1
+ARG t41
+ARG #0
+ARG &arr
+t42 := CALL QuickSort
+i := #0
+LABEL label17 :
+IF i < n GOTO label18
+GOTO label19
+LABEL label18 :
+t45 := &arr
+t46 := i * #4
+t44 := t45 + t46
+t43 := *t44
+WRITE t43
+t47 := i + #1
+i := t47
+GOTO label17
+LABEL label19 :
+RETURN #0

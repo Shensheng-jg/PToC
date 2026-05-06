@@ -1,5 +1,0 @@
-int main() {
-    int num1, num2, sum;
-    sum = addNumbers(num1, num2);
-    return 0;
-}

@@ -1,0 +1,11 @@
+FUNCTION main :
+tempValX := t1
+tempValY := t2
+t4 := tempValX * tempValX
+t5 := tempValY * tempValY
+t3 := t4 + t5
+calculatedDist := t3
+WRITE tempValX
+WRITE tempValY
+WRITE calculatedDist
+RETURN #0

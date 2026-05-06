@@ -1,17 +1,18 @@
-struct Temp1
+int fact(int n)
 {
-  int i;
-  float j;
-};
-
-struct Temp2
-{
-  int x;
-};
-
+  if (n == 1)
+    return n;
+  else
+    return (n * fact(n - 1));
+}
 int main()
 {
-  struct Temp1 t1;
-  struct Temp2 t2;
-  t1 = t2;
+  int m, result;
+  m = read();
+  if (m > 1)
+    result = fact(m);
+  else
+    result = 1;
+  write(result);
+  return 0;
 }

@@ -346,6 +346,17 @@ static FieldList append_field(FieldList head, FieldList node) {
 /* =========================
  * Program / ExtDef
  * ========================= */
+static void insert_builtin_functions(void) {
+    /* int read() */
+    Type read_type = new_type_function(new_type_basic(0), NULL, 0);
+    insert_symbol(new_symbol("read", SYM_FUNC, read_type));
+
+    /* int write(int) */
+    FieldList write_param = new_field("x", new_type_basic(0));
+    Type write_type = new_type_function(new_type_basic(0), write_param, 1);
+    insert_symbol(new_symbol("write", SYM_FUNC, write_type));
+}
+
 void semantic_analyze(Node *root) {
     memset(hash_table, 0, sizeof(hash_table));
     semantic_error_count = 0;
@@ -353,7 +364,8 @@ void semantic_analyze(Node *root) {
     current_depth = -1;
     anonymous_struct_id = 0;
 
-    enter_scope();          /* 全局作用域 */
+    enter_scope();
+    insert_builtin_functions();
     analyze_Program(root);
     leave_scope();
 }
